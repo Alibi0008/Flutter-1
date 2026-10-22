@@ -1,0 +1,126 @@
+Mobile Development	Practice 8: A Little of Everything
+Submission: Upload your work to GitHub repo till the next practice lesson
+A Little of Everything
+Dart, no widgets → A list that reacts → A layout that survives → A screen that answers → A form that validates
+Week 8 has no new lecture — it is the midterm week — so this lab is a recap of weeks 1–7 in one small app, a reading list. One level per topic, in the order the midterm asks them: a Dart task with no widgets, a widget with state, a layout that must not overflow, a navigation that brings a value back, and a form that validates itself. Nothing here is new. Everything here is the kind of thing you will be asked to do with the Wi-Fi off.
+The app: a Book has a title, an author, a page count, an optional year and a read flag. The list shows the books with a filter, a tap opens the detail, the detail can mark a book as read or delete it, and a button adds a new one through a form. Six files by the end: main.dart, models/book.dart, widgets/book_tile.dart, library_screen.dart, detail_screen.dart, add_book_screen.dart.
+Build Levels
+Level
+Topic
+Key Widgets
+Level 1
+Dart, no widgets
+a named constructor, int?, ??, where, map, fold, toSet, toString, debugPrint before runApp
+Level 2
+A list that reacts
+StatefulWidget, setState, an enum, a switch expression, ListView.builder, CheckboxListTile, ChoiceChip
+Level 3
+A layout that survives
+Row, Column, Expanded, Stack, Positioned, Card, maxLines, Theme.of(context)
+Level 4
+A screen that answers
+Navigator.push<T>, MaterialPageRoute, pop(value), await, mounted, showDialog<bool>
+Level 5
+A form that validates
+Form, TextFormField, validator, GlobalKey<FormState>, TextEditingController, int.tryParse, FloatingActionButton
+Starter Code
+flutter create reading_list, then copy this into lib/main.dart. It is the whole file; the screen it mentions does not exist yet. The Book class and the seed move to lib/models/book.dart in Level 1.
+import 'package:flutter/material.dart';
+import 'library_screen.dart';
+void main() => runApp(const MyApp());
+class MyApp extends StatelessWidget {
+const MyApp({super.key});
+@override
+Widget build(BuildContext context) => MaterialApp(
+theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo)),
+home: const LibraryScreen(),
+);
+}
+class Book {
+Book({
+required this.title,
+required this.author,
+required this.pages,
+this.year,
+this.read = false,
+});
+final String title;
+final String author;
+final int pages;
+final int? year;
+bool read;
+}
+final seed = <Book>[
+Book(title: 'Widgets All the Way Down', author: 'A. Nurmagambetova',
+pages: 288, year: 2021, read: true),
+Book(title: 'Null Safety for Humans', author: 'B. Seitkali',
+pages: 196, year: 2022),
+Book(title: 'Constraints Go Down, Sizes Go Up', author: 'C. Tashimova',
+pages: 320),
+Book(title: 'The Navigator Is a Stack', author: 'D. Alibekov',
+pages: 240, year: 2020),
+Book(title: 'A Very Long Title About Forms, Focus, the Keyboard '
+'and Everything That Overflows', author: 'E. Omarova',
+pages: 176, year: 2023),
+];
+Tasks (5)
+1.	Level 1: Dart, no widgets
+Move Book and seed to lib/models/book.dart and finish the model. book.dart imports nothing from Flutter — it is plain Dart:
+•A named constructor Book.fromMap(Map<String, dynamic> m): title, author and pages are required keys (m['pages'] as int); year is m['year'] as int? — a missing key stays null; read is m['read'] as bool? ?? false. No ! anywhere
+•String toString() → Null Safety for Humans — B. Seitkali, 196 pp. (2022); when year is null the parentheses are not printed at all. One if, or one ?:, on a nullable — the thing week 2 was about
+•Three top-level functions in the same file: int totalPages(List<Book> books) with fold; List<Book> unread(List<Book> books) with where and toList(); List<String> authors(List<Book> books) with map, toSet() and toList() — no duplicates, original order
+•In main(), before runApp: debugPrint('${totalPages(seed)} pages, ${unread(seed).length} unread'); and debugPrint(Book.fromMap({'title': 'X', 'author': 'Y', 'pages': 10}).toString());
+The test of whether you did this right:
+•	The console prints 1220 pages, 4 unread and X — Y, 10 pp. — no parentheses, no null in the output.
+•Now break it on purpose: change final int? year to final int year. The compiler points at the seed, at fromMap and at toString — every place that relied on the question mark. That is the promise int? makes and int does not. Put the ? back.
+2.	Level 2: A list that reacts
+lib/library_screen.dart: a StatefulWidget whose state is the list and the filter:
+•final List<Book> _books = [...seed]; — a copy, so the seed is never touched. enum Filter { all, unread, read } above the class; Filter _filter = Filter.all; in State
+•A getter List<Book> get _visible with a switch expression over _filter: all → _books, unread → unread(_books) from Level 1, read → _books.where((b) => b.read).toList()
+•A Row of three ChoiceChips — All, Unread, Read — above the list; selected: _filter == f, onSelected → setState. Below it an Expanded ListView.builder over _visible with a CheckboxListTile per book: title, author as subtitle, value: book.read, onChanged: (v) => setState(() => book.read = v ?? false)
+•The AppBar title shows the count: Reading list (4) — from _visible.length, so it changes with the filter
+The test of whether you did this right:
+•Tick a book under Unread: it disappears from the list and the title drops by one. All shows five. Switch filters back and forth: the chip stays selected and the ticks are remembered.
+•Now break it on purpose: write book.read = v ?? false without setState. Tap the checkbox: nothing moves. The value changed; nobody rebuilt. Put setState back.
+3.	Level 3: A layout that survives
+Replace CheckboxListTile with your own BookTile — a StatelessWidget in lib/widgets/book_tile.dart, const constructor, final Book book, final VoidCallback onToggle — and add a header above the chips:
+•BookTile is a Card with 12 px Padding and a Row: a Stack on the left — a CircleAvatar with the first letter of the title and, when the book is unread, a small Positioned dot in the top-right corner — then SizedBox(width: 12), then an Expanded Column (crossAxisAlignment.start): the title in textTheme.titleMedium, maxLines: 2, overflow: TextOverflow.ellipsis, and under it author · 196 pp.; then a Checkbox on the right that calls onToggle
+•The header: a Card with a Row of three Expanded columns — Books, Pages, Unread — the number in textTheme.headlineSmall, the word in bodySmall. The numbers come from Level 1: _books.length, totalPages(_books), unread(_books).length
+•Every colour comes from Theme.of(context).colorScheme and every text style from textTheme. No Colors.* and no fontSize: anywhere in book_tile.dart
+The test of whether you did this right:
+•The long title wraps to two lines and ends with …; no yellow-and-black stripes; the checkbox is at the same x on every row. Tick a book: the dot disappears and the header's Unread drops by one.
+•Now break it on purpose: remove Expanded from around the Column. Stripes, "overflowed by N pixels". The Row gave the Column unbounded width and the Text took all of it. Put Expanded back. Then rotate the emulator: the three header columns still share the width equally — that is the other thing Expanded does.
+4.	Level 4: A screen that answers
+lib/detail_screen.dart: a StatelessWidget that receives its Book through the constructor and answers with what the user decided:
+•Tapping a BookTile pushes DetailScreen(book: book) with MaterialPageRoute. The detail shows every field; year prints as Year unknown when it is null. No BackButton, no leading: — the arrow is drawn by AppBar
+•enum BookAction { toggleRead, delete } in detail_screen.dart. Two buttons: "Mark as read" / "Mark as unread" (the label depends on book.read) pops with BookAction.toggleRead; "Delete" first asks with showDialog<bool> + AlertDialog "Delete 'title'?" — Cancel / Delete — and only on true pops with BookAction.delete. context.mounted between the dialog's await and the pop
+•The list side: final action = await Navigator.of(context).push<BookAction>(...); then if (!mounted) return; then a switch on action: null → nothing; toggleRead → setState flips book.read; delete → setState removes the book. The detail never touches _books — it only answers
+The test of whether you did this right:
+•Open a book, press the back arrow: nothing changes. Open it, Delete, Cancel: still on the detail. Delete, Delete: back on the list, the row is gone, the header's Books is one less. Mark as read from the detail: the tick in the list is set when you come back. The console stays clean through all of it.
+•Draw the stack before you run it: list → detail → dialog. The dialog pops with a bool, the detail pops with a BookAction, the list is still there underneath, unchanged, waiting.
+5.	Level 5: A form that validates
+lib/add_book_screen.dart: a FloatingActionButton on the list pushes it with push<Book>, and it answers with a Book:
+•A Form with a GlobalKey<FormState> in State; four controllers — title, author, pages, year — fields of State, disposed. TextFormFields with a validator each: title at least 2 characters after trim(); author not empty; pages: int.tryParse is not null and the number is above 0 — final n = int.tryParse(v ?? ''); if (n == null || n <= 0) return 'A whole number above 0';; year: empty is fine, otherwise a number between 1450 and DateTime.now().year
+•keyboardType: TextInputType.number on pages and year; textInputAction.next on the first three and .done on the last; onTapOutside folds the keyboard; the Column sits in a SingleChildScrollView; autovalidateMode.onUserInteraction on the Form
+•Save: validate(); if true, build the Book from the controllers — int.parse(_pages.text) is safe now, the validator proved it; int.tryParse(_year.text) for the year — tryParse('') returns null, which is exactly what an empty year means — and pop(book). The list awaits, checks mounted, setState(() => _books.add(book))
+•flutter analyze prints No issues found!; dart format . has been run; no ! anywhere except currentState! in the Save handler
+The test of whether you did this right:
+•Save on the empty form: three messages at once, under their fields, none for year. Pages abc: a message, no pop. Year empty: saves, and the detail says Year unknown. Back on the list the new book is there, unread, and the header's Books, Pages and Unread all grew.
+•Back arrow on the form: nothing is added, nothing crashes — null came back, and if (book == null) return; is the whole handling.
+Tip: This is the shape of the midterm: five tasks, one per week, two hours, no network. If you want to know how it feels, do Levels 1–5 in one sitting with the Wi-Fi off and a timer, and commit after every level with the message level N. Every time you want to open a browser, write down what for. That list — three to ten lines — is the only thing worth rereading the night before: the slide it points to, not the whole deck.
+Requirements
+•flutter run shows the list and flutter analyze prints No issues found!
+•models/book.dart: Book.fromMap with no !, toString that hides a null year, totalPages with fold, unread with where, authors with map + toSet; the console prints 1220 pages, 4 unread at startup
+•LibraryScreen owns the list and the filter; _visible is a switch expression over an enum; the AppBar count follows the filter
+•BookTile lives in its own file, takes Book and a callback through a const constructor, uses the theme for every colour and style; the long title wraps with an ellipsis and nothing overflows in portrait or landscape
+•DetailScreen receives its Book through the constructor and answers with pop(BookAction); Delete asks first; the list reads the answer through await push<BookAction>, mounted, then setState; backing out changes nothing
+•AddBookScreen answers with pop(Book); four validators beside their fields, one validate() on Save, int.tryParse for the numbers, an empty year is allowed and stored as null
+•Every controller is a field of State and is disposed; no ! anywhere except currentState! in the Save handler
+•dart format . has been run; screenshot_list.png (filter on Unread, long title wrapped) and screenshot_form.png (the form with its three errors) are committed
+Useful Links
+1.Dart collections: where, map, fold: dart.dev/language/collections
+2.	Understanding constraints: docs.flutter.dev/ui/layout/constraints
+3.	Return data from a screen: docs.flutter.dev/cookbook/navigation/returning-data
+4.	Build a form with validation: docs.flutter.dev/cookbook/forms/validation
+5.	Switch expressions: dart.dev/language/branches#switch-expressions
+GOOD LUCK! :)
