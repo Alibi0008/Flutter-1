@@ -127,13 +127,14 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   // R27: Caller awaits pushNamed<Item>, checks null and mounted, then setState
-  Future<void> _openForm([Book? book]) async {
+  Future<Book?> _openForm([Book? book]) async {
     final result = await Navigator.of(context)
         .pushNamed<Book>(Routes.form, arguments: FormArgs(book));
     // R14 & R27: check result != null and mounted
     if (result != null && mounted) {
       _replaceBook(result);
     }
+    return result;
   }
 
   void _openDetail(Book book) {

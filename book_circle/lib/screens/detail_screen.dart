@@ -22,7 +22,7 @@ class DetailArgs {
   final Profile profile;
   final ValueChanged<Book> onChange;
   final ValueChanged<String> onDelete;
-  final ValueChanged<Book> onEdit;
+  final Future<Book?> Function(Book book) onEdit;
   final VoidCallback onSwitchToProfile;
 }
 
@@ -163,9 +163,12 @@ class _DetailScreenState extends State<DetailScreen> {
           title: Text(_book.title),
           actions: [
             PopupMenuButton<String>(
-              onSelected: (action) {
+              onSelected: (action) async {
                 if (action == 'edit') {
-                  widget.args.onEdit(_book);
+                  final updated = await widget.args.onEdit(_book);
+                  if (updated != null && mounted) {
+                    setState(() => _book = updated);
+                  }
                 } else if (action == 'delete') {
                   _handleDelete();
                 }
